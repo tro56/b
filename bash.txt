@@ -1,0 +1,67 @@
+#!/bin/bash
+
+#definiowanie czy numer jest z polski czy nie
+numer_telefonu="\+48 [0-9][0-9][0-9]-[0-9][0-9][0-9]-[0-9][0-9][0-9]"
+kazdy_numer_telefonu="\+[0-9][0-9] [0-9][0-9][0-9]-[0-9][0-9][0-9]-[0-9][0-9][0-9]"
+#find: Polecenie służące do wyszukiwania plików i katalogów w drzewie katalogów.
+pliki ='find -type f'
+
+search_and_save(){
+for plik in $@
+do
+echo "Polskie numery w pliku $plik"
+grep -o "$numer_telefonu" $plik
+
+echo "zagraniczne numery telefonu w pliku $plik"
+grep -o "$kazdy_numer_telefonu" $plik | grep -v "$numer_telefonu"
+
+grep -o "$numer_telefonu" $plik >>telefony_PL.txt
+grep -o "$każdy_numer_telefonu" $plik | grep -v "$numer_telefonu" >> telefony_no_PL.txt
+
+done
+}
+
+search_and_save $pliki
+
+
+#chat
+#!/bin/bash
+
+# Funkcja do przeszukiwania i zapisywania numerów telefonu
+search_and_save() {
+    local directory="$1"
+    local poland_regex="\+48 [0-9]\{3\}-[0-9]\{3\}-[0-9]\{3\}"
+    
+    find "$directory" -type f -exec grep "$poland_regex" {} + | tee telefony_PL.txt
+    find "$directory" -type f -exec grep -v "$poland_regex" {} + | tee telefony_no_PL.txt
+}
+
+# Funkcja do modyfikacji plików
+search_and_modify() {
+    local directory="$1"
+    local poland_regex="\+48 [0-9]\{3\}-[0-9]\{3\}-[0-9]\{3\}"
+    
+    find "$directory" -type f -writable -exec chmod 444 {} \;
+    find "$directory" -type f -writable -exec chown 2000 {} \;
+
+    # Modyfikacja plików źródłowych
+    sed -i "/$poland_regex/! s/^\(+[0-9]\{1,3\} [0-9]\{3\}-[0-9]\{3\}-[0-9]\{3\}\)$/[[\1]]/" telefony_no_PL.txt
+}
+
+# Funkcja do wypisywania statystyk
+print_statistics() {
+    local poland_count=$(grep -c "^\+48 [0-9]\{3\}-[0-9]\{3\}-[0-9]\{3\}$" telefony_PL.txt)
+    local no_poland_count=$(grep -c -E "^\[\[|\+[0-9]{1,3} [0-9]{3}-[0-9]{3}-[0-9]{3}\]\]$" telefony_no_PL.txt)
+    
+    echo "Liczba znalezionych numerów telefonu z Polski: $poland_count"
+    echo "Liczba znalezionych numerów telefonu spoza Polski: $no_poland_count"
+}
+
+# Przykładowe użycie funkcji
+search_and_save "/sciezka/do/katalogu"
+search_and_modify "/sciezka/do/katalogu"
+print_statistics
+
+
+
+}
